@@ -1,0 +1,1419 @@
+﻿// Проект: Система управления художественной галереей
+// Структура проекта:
+// 1. Модели данных
+// 2. Хранилище (репозитории для работы с JSON файлами)
+// 3. Сервисы (бизнес-логика)
+// 4. Консольный интерфейс
+
+namespace ArtGallery
+{
+    using ArtGallery.Models;
+    using ArtGallery.Services;
+    using System;
+    using System.Collections.Generic;
+    using System.Globalization;
+    using System.Linq;
+
+    public class Program
+    {
+        private static ArtGalleryService _service;
+
+        static void Main(string[] args)
+        {
+            // Console.BackgroundColor = ConsoleColor.White;
+            // Console.ForegroundColor = ConsoleColor.Black;
+            Console.OutputEncoding = System.Text.Encoding.UTF8;
+            Console.InputEncoding = System.Text.Encoding.UTF8;
+
+            CultureInfo.CurrentCulture = new CultureInfo("ru-RU");
+
+            _service = new ArtGalleryService();
+
+            // Инициализация примерных данных для демонстрации
+            InitializeSampleData();
+
+            bool exit = false;
+
+            while (!exit)
+            {
+                Console.Clear();
+                Console.WriteLine("=== СИСТЕМА УПРАВЛЕНИЯ ХУДОЖЕСТВЕННОЙ ГАЛЕРЕЕЙ ===");
+                Console.WriteLine("1. Просмотр произведений искусства");
+                Console.WriteLine("2. Просмотр художников");
+                Console.WriteLine("3. Просмотр выставок");
+                Console.WriteLine("4. Просмотр посетителей");
+                Console.WriteLine("5. Управление билетами");
+                Console.WriteLine("6. Продажи и аренда");
+                Console.WriteLine("7. Отчеты");
+                Console.WriteLine("0. Выход");
+                Console.Write("\nВыберите действие: ");
+
+                if (int.TryParse(Console.ReadLine(), out int choice))
+                {
+                    Console.Clear();
+
+                    switch (choice)
+                    {
+                        case 1:
+                            ArtworksMenu();
+                            break;
+                        case 2:
+                            ArtistsMenu();
+                            break;
+                        case 3:
+                            ExhibitionsMenu();
+                            break;
+                        case 4:
+                            VisitorsMenu();
+                            break;
+                        case 5:
+                            TicketsMenu();
+                            break;
+                        case 6:
+                            SalesAndRentalsMenu();
+                            break;
+                        case 7:
+                            ReportsMenu();
+                            break;
+                        case 0:
+                            exit = true;
+                            break;
+                        default:
+                            Console.WriteLine("Неверный выбор. Нажмите любую клавишу для продолжения...");
+                            Console.ReadKey();
+                            break;
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Неверный ввод. Нажмите любую клавишу для продолжения...");
+                    Console.ReadKey();
+                }
+            }
+        }
+
+        // === МЕНЕДЖМЕНТ ПРОИЗВЕДЕНИЙ ИСКУССТВА ===
+        private static void ArtworksMenu()
+        {
+            bool back = false;
+
+            while (!back)
+            {
+                Console.Clear();
+                Console.WriteLine("=== ПРОИЗВЕДЕНИЯ ИСКУССТВА ===");
+                Console.WriteLine("1. Просмотр всех произведений");
+                Console.WriteLine("2. Просмотр доступных произведений");
+                Console.WriteLine("3. Добавить новое произведение");
+                Console.WriteLine("0. Назад");
+                Console.Write("\nВыберите действие: ");
+
+                if (int.TryParse(Console.ReadLine(), out int choice))
+                {
+                    Console.Clear();
+
+                    switch (choice)
+                    {
+                        case 1:
+                            ShowAllArtworks();
+                            break;
+                        case 2:
+                            ShowAvailableArtworks();
+                            break;
+                        case 3:
+                            AddNewArtwork();
+                            break;
+                        case 0:
+                            back = true;
+                            break;
+                        default:
+                            Console.WriteLine("Неверный выбор. Нажмите любую клавишу для продолжения...");
+                            Console.ReadKey();
+                            break;
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Неверный ввод. Нажмите любую клавишу для продолжения...");
+                    Console.ReadKey();
+                }
+            }
+        }
+
+        private static void ShowAllArtworks()
+        {
+            _service.LoadReferences();
+            var artworks = _service.GetAllArtworks();
+
+            Console.WriteLine("=== ВСЕ ПРОИЗВЕДЕНИЯ ИСКУССТВА ===");
+
+            if (artworks.Count == 0)
+            {
+                Console.WriteLine("Произведения отсутствуют.");
+            }
+            else
+            {
+                foreach (var artwork in artworks)
+                {
+                    Console.WriteLine($"ID: {artwork.Id}");
+                    Console.WriteLine($"Название: {artwork.Title}");
+                    Console.WriteLine($"Художник: {artwork.Artist?.FullName ?? "Неизвестно"}");
+                    Console.WriteLine($"Год создания: {artwork.Year}");
+                    Console.WriteLine($"Жанр: {artwork.Genre}");
+                    Console.WriteLine($"Статус: {GetArtworkStatusName(artwork.Status)}");
+                    Console.WriteLine($"Оценочная стоимость: {artwork.EstimatedValue:C}");
+                    Console.WriteLine("-----------------------------------");
+                }
+            }
+
+            Console.WriteLine("\nНажмите любую клавишу для продолжения...");
+            Console.ReadKey();
+        }
+
+        private static void ShowAvailableArtworks()
+        {
+            var artworks = _service.GetAvailableArtworks();
+
+            Console.WriteLine("=== ДОСТУПНЫЕ ПРОИЗВЕДЕНИЯ ИСКУССТВА ===");
+
+            if (artworks.Count == 0)
+            {
+                Console.WriteLine("Доступные произведения отсутствуют.");
+            }
+            else
+            {
+                foreach (var artwork in artworks)
+                {
+                    Console.WriteLine($"ID: {artwork.Id}");
+                    Console.WriteLine($"Название: {artwork.Title}");
+                    Console.WriteLine($"Художник: {artwork.Artist?.FullName ?? "Неизвестно"}");
+                    Console.WriteLine($"Год создания: {artwork.Year}");
+                    Console.WriteLine($"Жанр: {artwork.Genre}");
+                    Console.WriteLine($"Оценочная стоимость: {artwork.EstimatedValue:C}");
+                    Console.WriteLine("-----------------------------------");
+                }
+            }
+            Console.WriteLine("\nНажмите любую клавишу для продолжения...");
+            Console.ReadKey();
+        }
+
+        private static void AddNewArtwork()
+        {
+            Console.WriteLine("=== ДОБАВЛЕНИЕ НОВОГО ПРОИЗВЕДЕНИЯ ===");
+
+            _service.LoadReferences();
+            // Показываем список художников для выбора
+            var artists = _service.GetAllArtists();
+            Console.WriteLine("Доступные художники:");
+            foreach (var artist in artists)
+            {
+                Console.WriteLine($"{artist.Id}: {artist.FullName} ({artist.Country})");
+            }
+            Console.Write("\nВведите название произведения: ");
+            string title = Console.ReadLine();
+
+            Console.Write("Введите ID художника: ");
+            string artistId = Console.ReadLine();
+
+            Console.Write("Введите год создания: ");
+            if (!int.TryParse(Console.ReadLine(), out int year))
+            {
+                Console.WriteLine("Неверный формат года.");
+                Console.ReadKey();
+                return;
+            }
+
+            Console.Write("Введите жанр: ");
+            string genre = Console.ReadLine();
+
+            Console.Write("Введите описание: ");
+            string description = Console.ReadLine();
+
+            Console.Write("Введите оценочную стоимость: ");
+            if (!decimal.TryParse(Console.ReadLine(), out decimal value))
+            {
+                Console.WriteLine("Неверный формат стоимости.");
+                Console.ReadKey();
+                return;
+            }
+
+            try
+            {
+                var artwork = _service.AddArtwork(title, artistId, year, genre, description, value);
+                Console.WriteLine($"Произведение \"{artwork.Title}\" успешно добавлено!");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка: {ex.Message}");
+            }
+
+            Console.WriteLine("\nНажмите любую клавишу для продолжения...");
+            Console.ReadKey();
+        }
+
+        // === МЕНЕДЖМЕНТ ХУДОЖНИКОВ ===
+        private static void ArtistsMenu()
+        {
+            bool back = false;
+
+            while (!back)
+            {
+                Console.Clear();
+                Console.WriteLine("=== ХУДОЖНИКИ ===");
+                Console.WriteLine("1. Просмотр всех художников");
+                Console.WriteLine("2. Популярные художники по продажам");
+                Console.WriteLine("0. Назад");
+                Console.Write("\nВыберите действие: ");
+
+                if (int.TryParse(Console.ReadLine(), out int choice))
+                {
+                    Console.Clear();
+
+                    switch (choice)
+                    {
+                        case 1:
+                            ShowAllArtists();
+                            break;
+                        case 2:
+                            ShowPopularArtists();
+                            break;
+                        case 0:
+                            back = true;
+                            break;
+                        default:
+                            Console.WriteLine("Неверный выбор. Нажмите любую клавишу для продолжения...");
+                            Console.ReadKey();
+                            break;
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Неверный ввод. Нажмите любую клавишу для продолжения...");
+                    Console.ReadKey();
+                }
+            }
+        }
+
+        private static void ShowAllArtists()
+        {
+            _service.LoadReferences();
+            var artists = _service.GetAllArtists();
+
+            Console.WriteLine("=== ВСЕ ХУДОЖНИКИ ===");
+
+            if (artists.Count == 0)
+            {
+                Console.WriteLine("Художники отсутствуют.");
+            }
+            else
+            {
+                foreach (var artist in artists)
+                {
+                    Console.WriteLine($"ID: {artist.Id}");
+                    Console.WriteLine($"ФИО: {artist.FullName}");
+                    Console.WriteLine($"Страна: {artist.Country}");
+                    Console.WriteLine($"Годы жизни: {artist.LifeYears}");
+                    Console.WriteLine($"Стиль: {artist.Style}");
+                    Console.WriteLine($"Количество работ: {artist.ArtworkIds.Count}");
+                    Console.WriteLine("-----------------------------------");
+                }
+            }
+
+            Console.WriteLine("\nНажмите любую клавишу для продолжения...");
+            Console.ReadKey();
+        }
+
+        private static void ShowPopularArtists()
+        {
+            var popularArtists = _service.GetPopularArtistsBySales();
+
+            Console.WriteLine("=== ПОПУЛЯРНЫЕ ХУДОЖНИКИ ПО ПРОДАЖАМ ===");
+
+            if (popularArtists.Count == 0)
+            {
+                Console.WriteLine("Данные о продажах отсутствуют.");
+            }
+            else
+            {
+                int rank = 1;
+                foreach (var item in popularArtists)
+                {
+                    Console.WriteLine($"{rank}. {item.Artist.FullName} - {item.SoldCount} проданных работ");
+                    rank++;
+                }
+            }
+
+            Console.WriteLine("\nНажмите любую клавишу для продолжения...");
+            Console.ReadKey();
+        }
+
+
+        // === МЕНЕДЖМЕНТ ВЫСТАВОК ===
+        private static void ExhibitionsMenu()
+        {
+            bool back = false;
+
+            while (!back)
+            {
+                Console.Clear();
+                Console.WriteLine("=== ВЫСТАВКИ ===");
+                Console.WriteLine("1. Просмотр всех выставок");
+                Console.WriteLine("2. Предстоящие выставки");
+                Console.WriteLine("0. Назад");
+                Console.Write("\nВыберите действие: ");
+
+                if (int.TryParse(Console.ReadLine(), out int choice))
+                {
+                    Console.Clear();
+
+                    switch (choice)
+                    {
+                        case 1:
+                            ShowAllExhibitions();
+                            break;
+                        case 2:
+                            ShowUpcomingExhibitions();
+                            break;
+                        case 0:
+                            back = true;
+                            break;
+                        default:
+                            Console.WriteLine("Неверный выбор. Нажмите любую клавишу для продолжения...");
+                            Console.ReadKey();
+                            break;
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Неверный ввод. Нажмите любую клавишу для продолжения...");
+                    Console.ReadKey();
+                }
+            }
+        }
+
+        private static void ShowAllExhibitions()
+        {
+            _service.LoadReferences();
+            var exhibitions = _service.GetAllExhibitions();
+
+            Console.WriteLine("=== ВСЕ ВЫСТАВКИ ===");
+
+            if (exhibitions.Count == 0)
+            {
+                Console.WriteLine("Выставки отсутствуют.");
+            }
+            else
+            {
+                foreach (var exhibition in exhibitions)
+                {
+                    Console.WriteLine($"ID: {exhibition.Id}");
+                    Console.WriteLine($"Название: {exhibition.Title}");
+                    Console.WriteLine(
+                        $"Период: {exhibition.StartDate.ToShortDateString()} - {exhibition.EndDate.ToShortDateString()}");
+                    Console.WriteLine($"Место: {exhibition.Location}");
+                    Console.WriteLine($"Количество экспонатов: {exhibition.ArtworkIds.Count}");
+                    Console.WriteLine($"Цена билета: {exhibition.TicketPrice:C}");
+                    Console.WriteLine("-----------------------------------");
+                }
+            }
+
+            Console.WriteLine("\nНажмите любую клавишу для продолжения...");
+            Console.ReadKey();
+        }
+
+        private static void ShowUpcomingExhibitions()
+        {
+            var exhibitions = _service.GetUpcomingExhibitions();
+
+            Console.WriteLine("=== ПРЕДСТОЯЩИЕ ВЫСТАВКИ ===");
+
+            if (exhibitions.Count == 0)
+            {
+                Console.WriteLine("Предстоящие выставки отсутствуют.");
+            }
+            else
+            {
+                foreach (var exhibition in exhibitions)
+                {
+                    string status = DateTime.Today < exhibition.StartDate ? "Скоро" : "Действует";
+
+                    Console.WriteLine($"ID: {exhibition.Id}");
+                    Console.WriteLine($"Название: {exhibition.Title} ({status})");
+                    Console.WriteLine(
+                        $"Период: {exhibition.StartDate.ToShortDateString()} - {exhibition.EndDate.ToShortDateString()}");
+                    Console.WriteLine($"Место: {exhibition.Location}");
+                    Console.WriteLine($"Цена билета: {exhibition.TicketPrice:C}");
+                    Console.WriteLine("-----------------------------------");
+                }
+            }
+
+            Console.WriteLine("\nНажмите любую клавишу для продолжения...");
+            Console.ReadKey();
+        }
+
+        // === МЕНЕДЖМЕНТ ПОСЕТИТЕЛЕЙ ===
+        private static void VisitorsMenu()
+        {
+            bool back = false;
+
+            while (!back)
+            {
+                Console.Clear();
+                Console.WriteLine("=== ПОСЕТИТЕЛИ ===");
+                Console.WriteLine("1. Просмотр всех посетителей");
+                Console.WriteLine("0. Назад");
+                Console.Write("\nВыберите действие: ");
+
+                if (int.TryParse(Console.ReadLine(), out int choice))
+                {
+                    Console.Clear();
+
+                    switch (choice)
+                    {
+                        case 1:
+                            ShowAllVisitors();
+                            break;
+                        case 0:
+                            back = true;
+                            break;
+                        default:
+                            Console.WriteLine("Неверный выбор. Нажмите любую клавишу для продолжения...");
+                            Console.ReadKey();
+                            break;
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Неверный ввод. Нажмите любую клавишу для продолжения...");
+                    Console.ReadKey();
+                }
+            }
+        }
+
+        private static void ShowAllVisitors()
+        {
+            _service.LoadReferences();
+            var visitors = _service.GetAllVisitors();
+
+            Console.WriteLine("=== ВСЕ ПОСЕТИТЕЛИ ===");
+
+            if (visitors.Count == 0)
+            {
+                Console.WriteLine("Посетители отсутствуют.");
+            }
+            else
+            {
+                foreach (var visitor in visitors)
+                {
+                    Console.WriteLine($"ID: {visitor.Id}");
+                    Console.WriteLine($"ФИО: {visitor.FullName}");
+                    Console.WriteLine($"Контактная информация: {visitor.ContactInfo}");
+                    Console.WriteLine($"Количество посещений: {visitor.VisitHistory.Count}");
+                    Console.WriteLine($"Количество покупок: {visitor.PurchaseIds.Count}");
+                    Console.WriteLine("-----------------------------------");
+                }
+            }
+
+            Console.WriteLine("\nНажмите любую клавишу для продолжения...");
+            Console.ReadKey();
+        }
+
+        // === МЕНЕДЖМЕНТ БИЛЕТОВ ===
+        private static void TicketsMenu()
+        {
+            bool back = false;
+
+            while (!back)
+            {
+                Console.Clear();
+                Console.WriteLine("=== БИЛЕТЫ ===");
+                Console.WriteLine("1. Просмотр всех билетов");
+                Console.WriteLine("2. Забронировать билет");
+                Console.WriteLine("0. Назад");
+                Console.Write("\nВыберите действие: ");
+
+                if (int.TryParse(Console.ReadLine(), out int choice))
+                {
+                    Console.Clear();
+
+                    switch (choice)
+                    {
+                        case 1:
+                            ShowAllTickets();
+                            break;
+                        case 2:
+                            BookNewTicket();
+                            break;
+                        case 0:
+                            back = true;
+                            break;
+                        default:
+                            Console.WriteLine("Неверный выбор. Нажмите любую клавишу для продолжения...");
+                            Console.ReadKey();
+                            break;
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Неверный ввод. Нажмите любую клавишу для продолжения...");
+                    Console.ReadKey();
+                }
+            }
+        }
+
+        private static void ShowAllTickets()
+        {
+            _service.LoadReferences();
+            var tickets = _service.GetAllTickets();
+
+            Console.WriteLine("=== ВСЕ БИЛЕТЫ ===");
+
+            if (tickets.Count == 0)
+            {
+                Console.WriteLine("Билеты отсутствуют.");
+            }
+            else
+            {
+                foreach (var ticket in tickets)
+                {
+                    Console.WriteLine($"ID: {ticket.Id}");
+                    Console.WriteLine($"Выставка: {ticket.Exhibition?.Title ?? "Неизвестно"}");
+                    Console.WriteLine($"Посетитель: {ticket.Visitor?.FullName ?? "Неизвестно"}");
+                    Console.WriteLine($"Дата посещения: {ticket.VisitDate.ToShortDateString()}");
+                    Console.WriteLine($"Цена: {ticket.Price:C}");
+                    Console.WriteLine($"Статус: {GetTicketStatusName(ticket.Status)}");
+                    Console.WriteLine("-----------------------------------");
+                }
+            }
+
+            Console.WriteLine("\nНажмите любую клавишу для продолжения...");
+            Console.ReadKey();
+        }
+
+        private static void BookNewTicket()
+        {
+            Console.WriteLine("=== БРОНИРОВАНИЕ БИЛЕТА ===");
+
+            // Показываем список выставок
+            var exhibitions = _service.GetUpcomingExhibitions();
+            Console.WriteLine("Доступные выставки:");
+            foreach (var exhibition in exhibitions)
+            {
+                Console.WriteLine($"{exhibition.Id}: {exhibition.Title} " +
+                                  $"({exhibition.StartDate.ToShortDateString()} - {exhibition.EndDate.ToShortDateString()})");
+            }
+
+            Console.Write("\nВведите ID выставки: ");
+            string exhibitionId = Console.ReadLine();
+
+            _service.LoadReferences();
+            // Показываем список посетителей
+            var visitors = _service.GetAllVisitors();
+            Console.WriteLine("\nЗарегистрированные посетители:");
+            foreach (var visitor in visitors)
+            {
+                Console.WriteLine($"{visitor.Id}: {visitor.FullName}");
+            }
+
+            Console.Write("\nВведите ID посетителя: ");
+            string visitorId = Console.ReadLine();
+
+            Console.Write("Введите дату посещения (дд.мм.гггг): ");
+            if (!DateTime.TryParse(Console.ReadLine(), out DateTime visitDate))
+            {
+                Console.WriteLine("Неверный формат даты.");
+                Console.ReadKey();
+                return;
+            }
+
+            try
+            {
+                var ticket = _service.BookTicket(exhibitionId, visitorId, visitDate);
+                Console.WriteLine($"Билет успешно забронирован! ID билета: {ticket.Id}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка: {ex.Message}");
+            }
+
+            Console.WriteLine("\nНажмите любую клавишу для продолжения...");
+            Console.ReadKey();
+        }
+
+
+        // === ПРОДАЖИ И АРЕНДА ===
+        private static void SalesAndRentalsMenu()
+        {
+            bool back = false;
+
+            while (!back)
+            {
+                Console.Clear();
+                Console.WriteLine("=== ПРОДАЖИ И АРЕНДА ===");
+                Console.WriteLine("1. Просмотр всех продаж");
+                Console.WriteLine("2. Просмотр всех аренд");
+                Console.WriteLine("3. Продать произведение");
+                Console.WriteLine("4. Сдать произведение в аренду");
+                Console.WriteLine("0. Назад");
+                Console.Write("\nВыберите действие: ");
+
+                if (int.TryParse(Console.ReadLine(), out int choice))
+                {
+                    Console.Clear();
+
+                    switch (choice)
+                    {
+                        case 1:
+                            ShowAllSales();
+                            break;
+                        case 2:
+                            ShowAllRentals();
+                            break;
+                        case 3:
+                            SellArtwork();
+                            break;
+                        case 4:
+                            RentArtwork();
+                            break;
+                        case 0:
+                            back = true;
+                            break;
+                        default:
+                            Console.WriteLine("Неверный выбор. Нажмите любую клавишу для продолжения...");
+                            Console.ReadKey();
+                            break;
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Неверный ввод. Нажмите любую клавишу для продолжения...");
+                    Console.ReadKey();
+                }
+            }
+        }
+
+        private static void ShowAllSales()
+        {
+            _service.LoadReferences();
+            var sales = _service.GetAllSales();
+
+            Console.WriteLine("=== ВСЕ ПРОДАЖИ ===");
+
+            if (sales.Count == 0)
+            {
+                Console.WriteLine("Продажи отсутствуют.");
+            }
+            else
+            {
+                foreach (var sale in sales)
+                {
+                    Console.WriteLine($"ID: {sale.Id}");
+                    Console.WriteLine($"Произведение: {sale.Artwork?.Title ?? "Неизвестно"}");
+                    Console.WriteLine($"Художник: {sale.Artwork?.Artist?.FullName ?? "Неизвестно"}");
+                    Console.WriteLine($"Покупатель: {sale.Buyer?.FullName ?? "Неизвестно"}");
+                    Console.WriteLine($"Дата: {sale.Date.ToShortDateString()}");
+                    Console.WriteLine($"Сумма: {sale.Amount:C}");
+                    Console.WriteLine("-----------------------------------");
+                }
+            }
+
+            Console.WriteLine("\nНажмите любую клавишу для продолжения...");
+            Console.ReadKey();
+        }
+
+        private static void ShowAllRentals()
+        {
+            var rentedArtworks = _service.GetRentedArtworks();
+            var visitors = _service.GetAllVisitors();
+            Console.WriteLine("=== АРЕНДЫ ПРОИЗВЕДЕНИЙ ===");
+
+            if (rentedArtworks.Count == 0)
+            {
+                Console.WriteLine("Активные аренды отсутствуют.");
+            }
+            else
+            {
+                foreach (var item in rentedArtworks)
+                {
+                    var visitor = visitors.FirstOrDefault(x => x.Id == item.Rental.RenterId);
+                    Console.WriteLine($"ID аренды: {item.Rental.Id}");
+                    Console.WriteLine($"Произведение: {item.Artwork?.Title ?? "Неизвестно"}");
+                    Console.WriteLine($"Художник: {item.Artwork?.Artist?.FullName ?? "Неизвестно"}");
+                    Console.WriteLine($"Арендатор: {visitor?.FullName ?? item.Rental.RenterId}");
+                    Console.WriteLine(
+                        $"Период: {item.Rental.StartDate.ToShortDateString()} - {item.Rental.EndDate.ToShortDateString()}");
+                    Console.WriteLine($"Стоимость: {item.Rental.Cost:C}");
+                    Console.WriteLine("-----------------------------------");
+                }
+            }
+
+            Console.WriteLine("\nНажмите любую клавишу для продолжения...");
+            Console.ReadKey();
+        }
+
+        private static void SellArtwork()
+        {
+            Console.WriteLine("=== ПРОДАЖА ПРОИЗВЕДЕНИЯ ===");
+
+            // Показываем список доступных произведений
+            var availableArtworks = _service.GetAvailableArtworks();
+
+            Console.WriteLine("Доступные произведения:");
+            foreach (var artwork in availableArtworks)
+            {
+                Console.WriteLine($"{artwork.Id}: {artwork.Title} - {artwork.Artist?.FullName ?? "Неизвестно"} " +
+                                  $"(Оценочная стоимость: {artwork.EstimatedValue:C})");
+            }
+
+            Console.Write("\nВведите ID произведения: ");
+            string artworkId = Console.ReadLine();
+
+            _service.LoadReferences();
+            // Показываем список посетителей
+            var visitors = _service.GetAllVisitors();
+            Console.WriteLine("\nПосетители (потенциальные покупатели):");
+            foreach (var visitor in visitors)
+            {
+                Console.WriteLine($"{visitor.Id}: {visitor.FullName}");
+            }
+
+            Console.Write("\nВведите ID покупателя: ");
+            string buyerId = Console.ReadLine();
+
+            Console.Write("Введите сумму продажи: ");
+            if (!decimal.TryParse(Console.ReadLine(), out decimal amount))
+            {
+                Console.WriteLine("Неверный формат суммы.");
+                Console.ReadKey();
+                return;
+            }
+            try
+            {
+                var sale = _service.SellArtwork(artworkId, buyerId, amount);
+                Console.WriteLine($"Произведение успешно продано за {sale.Amount:C}!");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка: {ex.Message}");
+            }
+
+            Console.WriteLine("\nНажмите любую клавишу для продолжения...");
+            Console.ReadKey();
+        }
+
+        private static void RentArtwork()
+        {
+            Console.WriteLine("=== АРЕНДА ПРОИЗВЕДЕНИЯ ===");
+
+            // Показываем список доступных произведений
+            var availableArtworks = _service.GetAvailableArtworks();
+
+            Console.WriteLine("Доступные произведения:");
+            foreach (var artwork in availableArtworks)
+            {
+                Console.WriteLine($"{artwork.Id}: {artwork.Title} - {artwork.Artist?.FullName ?? "Неизвестно"}");
+            }
+
+            Console.Write("\nВведите ID произведения: ");
+            string artworkId = Console.ReadLine();
+
+            _service.LoadReferences();
+            // Показываем список посетителей
+            var visitors = _service.GetAllVisitors();
+            Console.WriteLine("\nПосетители (потенциальные арендаторы):");
+            foreach (var visitor in visitors)
+            {
+                Console.WriteLine($"{visitor.Id}: {visitor.FullName}");
+            }
+
+            Console.Write("\nВведите ID арендатора: ");
+            string renterId = Console.ReadLine();
+
+            Console.Write("Введите дату начала аренды (дд.мм.гггг): ");
+            if (!DateTime.TryParse(Console.ReadLine(), out DateTime startDate))
+            {
+                Console.WriteLine("Неверный формат даты.");
+                Console.ReadKey();
+                return;
+            }
+
+            Console.Write("Введите дату окончания аренды (дд.мм.гггг): ");
+            if (!DateTime.TryParse(Console.ReadLine(), out DateTime endDate))
+            {
+                Console.WriteLine("Неверный формат даты.");
+                Console.ReadKey();
+                return;
+            }
+
+            Console.Write("Введите стоимость аренды: ");
+            if (!decimal.TryParse(Console.ReadLine(), out decimal cost))
+            {
+                Console.WriteLine("Неверный формат стоимости.");
+                Console.ReadKey();
+                return;
+            }
+
+            try
+            {
+                var rental = _service.RentArtwork(artworkId, renterId, startDate, endDate, cost);
+                Console.WriteLine($"Произведение успешно сдано в аренду до {rental.EndDate.ToShortDateString()}!");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка: {ex.Message}");
+            }
+
+            Console.WriteLine("\nНажмите любую клавишу для продолжения...");
+            Console.ReadKey();
+        }
+
+        // Меню отчетов
+        private static void ReportsMenu()
+        {
+            bool back = false;
+            while (!back)
+            {
+                Console.Clear();
+                Console.WriteLine("=== ОТЧЕТЫ ===");
+                Console.WriteLine("1. Список доступных произведений");
+                Console.WriteLine("2. Выставки ближайшего месяца");
+                Console.WriteLine("3. Популярные художники по продажам");
+                Console.WriteLine("4. Общая выручка");
+                Console.WriteLine("5. Арендованные произведения");
+                Console.WriteLine("0. Назад");
+                Console.Write("\nВыберите действие: ");
+
+                if (!int.TryParse(Console.ReadLine(), out int choice))
+                {
+                    Console.WriteLine("Неверный ввод.");
+                    Console.ReadKey();
+                    continue;
+                }
+
+                Console.Clear();
+                switch (choice)
+                {
+                    case 1:
+                        ShowAvailableArtworks();
+                        break;
+                    case 2:
+                        ShowUpcomingExhibitions();
+                        break;
+                    case 3:
+                        ShowPopularArtists();
+                        break;
+                    case 4:
+                        ShowTotalRevenue();
+                        break;
+                    case 5:
+                        ShowAllRentals();
+                        break;
+                    case 0:
+                        back = true;
+                        continue;
+                    default:
+                        Console.WriteLine("Неверный выбор.");
+                        break;
+                }
+            }
+        }
+
+        private static void ShowTotalRevenue()
+        {
+            _service.LoadReferences();
+            var (ticketRev, salesRev, total) = _service.GetTotalRevenue();
+            Console.WriteLine("=== ОБЩАЯ ВЫРУЧКА ===");
+            Console.WriteLine($"Выручка от билетов: {ticketRev:C}");
+            Console.WriteLine($"Выручка от продаж: {salesRev:C}");
+            Console.WriteLine($"Итого: {total:C}");
+            
+            Console.WriteLine("\nНажмите любую клавишу для продолжения...");
+            Console.ReadKey();
+        }
+        
+        
+        // Инициализация демонстрационных данных
+        private static void InitializeSampleData()
+        {
+            _service.LoadReferences();
+            // Если данные уже загружены, пропускаем повторное добавление
+            if (_service.GetAllArtists().Any()) return;
+
+            // Добавляем художников
+            var artist1 = _service.AddArtist("Иван Иванов", "Россия", "1950-2000", "Реализм");
+            var artist2 = _service.AddArtist("Анна Смирнова", "Франция", "1965-наст", "Импрессионизм");
+
+            // Добавляем произведения искусства
+            var art1 = _service.AddArtwork(
+                "Утро в лесу",
+                artist1.Id,
+                1995,
+                "Пейзаж",
+                "Теплый весенний пейзаж",
+                150000m
+            );
+            var art2 = _service.AddArtwork(
+                "Вечерний город",
+                artist2.Id,
+                2005,
+                "Городской пейзаж",
+                "Огни ночного мегаполиса",
+                200000m
+            );
+
+            // Добавляем выставку
+            var exhibition = _service.AddExhibition(
+                "Весенняя коллекция",
+                DateTime.Today.AddDays(1),
+                DateTime.Today.AddDays(30),
+                "Главный зал",
+                new List<string> { art1.Id, art2.Id },
+                500m
+            );
+
+            // Добавляем посетителя
+            var visitor = _service.AddVisitor("Ольга Петрова", "olga.pet@example.com");
+
+            // Бронирование билета
+            _service.BookTicket(exhibition.Id, visitor.Id, DateTime.Today.AddDays(2));
+
+            // Продажа и аренда произведений
+            _service.SellArtwork(art1.Id, visitor.Id, art1.EstimatedValue);
+            _service.RentArtwork(art2.Id, visitor.Id, DateTime.Today, DateTime.Today.AddDays(7), 10000m);
+        }
+
+        
+
+        // Помощники для отображения статусов
+        private static string GetArtworkStatusName(ArtworkStatus status)
+        {
+            return status switch
+            {
+                ArtworkStatus.InGallery => "В галерее",
+                ArtworkStatus.Sold => "Продано",
+                ArtworkStatus.Rented => "В аренде",
+                _ => status.ToString()
+            };
+        }
+
+        private static string GetTicketStatusName(TicketStatus status)
+        {
+            return status switch
+            {
+                TicketStatus.Reserved => "Забронирован",
+                TicketStatus.Used => "Использован",
+                TicketStatus.Cancelled => "Отменен",
+                _ => status.ToString()
+            };
+        }
+    }
+}
+
+using ArtGallery.Models;
+using ArtGallery.Repository;
+
+namespace ArtGallery.Services
+{
+    public class ArtGalleryService
+    {
+        private readonly IRepository<Artwork> _artworkRepo;
+        private readonly IRepository<Artist> _artistRepo;
+        private readonly IRepository<Exhibition> _exhibitionRepo;
+        private readonly IRepository<Visitor> _visitorRepo;
+        private readonly IRepository<Ticket> _ticketRepo;
+        private readonly IRepository<Sale> _saleRepo;
+        private readonly IRepository<Rental> _rentalRepo;
+
+        public ArtGalleryService()
+        {
+            _artworkRepo = new JsonRepository<Artwork>("artworks.json");
+            _artistRepo = new JsonRepository<Artist>("artists.json");
+            _exhibitionRepo = new JsonRepository<Exhibition>("exhibitions.json");
+            _visitorRepo = new JsonRepository<Visitor>("visitors.json");
+            _ticketRepo = new JsonRepository<Ticket>("tickets.json");
+            _saleRepo = new JsonRepository<Sale>("sales.json");
+            _rentalRepo = new JsonRepository<Rental>("rentals.json");
+        }
+
+        // Загрузка и установление связей между сущностями
+        public void LoadReferences()
+        {
+            var artworks = _artworkRepo.GetAll();
+            var artists = _artistRepo.GetAll();
+            var exhibitions = _exhibitionRepo.GetAll();
+            var visitors = _visitorRepo.GetAll();
+            var tickets = _ticketRepo.GetAll();
+            var sales = _saleRepo.GetAll();
+            var rentals = _rentalRepo.GetAll();
+
+            // Связываем художников и произведения искусства
+            foreach (var artwork in artworks)
+            {
+                artwork.Artist = artists.FirstOrDefault(a => a.Id == artwork.ArtistId);
+            }
+
+            foreach (var artist in artists)
+            {
+                artist.Artworks = artworks.Where(a => a.ArtistId == artist.Id).ToList();
+            }
+
+            // Связываем выставки и произведения искусства
+            foreach (var exhibition in exhibitions)
+            {
+                exhibition.Artworks = artworks
+                    .Where(a => exhibition.ArtworkIds.Contains(a.Id))
+                    .ToList();
+            }
+
+            // Связываем посетителей и покупки
+            foreach (var visitor in visitors)
+            {
+                visitor.Purchases = sales
+                    .Where(s => s.BuyerId == visitor.Id)
+                    .ToList();
+            }
+
+            // Связываем билеты с выставками и посетителями
+            foreach (var ticket in tickets)
+            {
+                ticket.Exhibition = exhibitions.FirstOrDefault(e => e.Id == ticket.ExhibitionId);
+                ticket.Visitor = visitors.FirstOrDefault(v => v.Id == ticket.VisitorId);
+            }
+
+            // Связываем продажи с произведениями и покупателями
+            foreach (var sale in sales)
+            {
+                sale.Artwork = artworks.FirstOrDefault(a => a.Id == sale.ArtworkId);
+                sale.Buyer = visitors.FirstOrDefault(v => v.Id == sale.BuyerId);
+            }
+
+            // Связываем аренды с произведениями и арендаторами
+            foreach (var rental in rentals)
+            {
+                rental.Artwork = artworks.FirstOrDefault(a => a.Id == rental.ArtworkId);
+                rental.Renter = visitors.FirstOrDefault(v => v.Id == rental.RenterId);
+            }
+        }
+
+        // === СПИСКИ ===
+        
+        public List<Artwork> GetAllArtworks() => _artworkRepo.GetAll();
+        public List<Artist> GetAllArtists() => _artistRepo.GetAll();
+        public List<Exhibition> GetAllExhibitions() => _exhibitionRepo.GetAll();
+        public List<Visitor> GetAllVisitors() => _visitorRepo.GetAll();
+        public List<Ticket> GetAllTickets() => _ticketRepo.GetAll();
+        public List<Sale> GetAllSales() => _saleRepo.GetAll();
+        public List<Rental> GetAllRentals() => _rentalRepo.GetAll();
+        
+        // === ЗАПРОСЫ ===
+
+        // Список произведений искусства в наличии
+        public List<Artwork> GetAvailableArtworks()
+        {
+            LoadReferences();
+            return _artworkRepo.GetAll()
+                .Where(a => a.Status == ArtworkStatus.InGallery)
+                .ToList();
+        }
+
+        // Выставки, запланированные на ближайший месяц
+        public List<Exhibition> GetUpcomingExhibitions()
+        {
+            LoadReferences();
+            DateTime today = DateTime.Today;
+            DateTime oneMonthAhead = today.AddMonths(1);
+            
+            return _exhibitionRepo.GetAll()
+                .Where(e => e.StartDate <= oneMonthAhead && e.EndDate >= today)
+                .ToList();
+        }
+
+        // Самые популярные художники по количеству проданных работ
+        public List<(Artist Artist, int SoldCount)> GetPopularArtistsBySales()
+        {
+            LoadReferences();
+            var artworks = _artworkRepo.GetAll();
+            var sales = _saleRepo.GetAll();
+            var artists = _artistRepo.GetAll();
+
+            var soldArtworks = sales.Select(s => s.ArtworkId).ToList();
+            
+            return artists
+                .Select(artist => (
+                    Artist: artist,
+                    SoldCount: soldArtworks.Count(id => 
+                        artworks.FirstOrDefault(a => a.Id == id)?.ArtistId == artist.Id)
+                ))
+                .OrderByDescending(item => item.SoldCount)
+                .ToList();
+        }
+
+        /// <summary>
+        /// Общая выручка от билетов и продаж картин
+        /// </summary>
+        /// <returns>Выручка с билетов, Выручка с картин, Общая выручка</returns>
+        public (decimal TicketRevenue, decimal SalesRevenue, decimal TotalRevenue) GetTotalRevenue()
+        {
+            LoadReferences();
+            
+            decimal ticketRevenue = _ticketRepo.GetAll()
+                .Where(t => t.Status != TicketStatus.Cancelled)
+                .Sum(t => t.Price);
+                
+            decimal salesRevenue = _saleRepo.GetAll()
+                .Sum(s => s.Amount);
+                
+            return (ticketRevenue, salesRevenue, ticketRevenue + salesRevenue);
+        }
+
+        // Произведения, находящиеся в аренде
+        public List<(Artwork Artwork, Rental Rental)> GetRentedArtworks()
+        {
+            LoadReferences();
+            
+            var rentals = _rentalRepo.GetAll();
+            var artworks = _artworkRepo.GetAll();
+            
+            var currentRentals = rentals
+                .Where(r => r.EndDate >= DateTime.Today)
+                .ToList();
+            
+            return currentRentals
+                .Select(rental => (
+                    Artwork: artworks.FirstOrDefault(a => a.Id == rental.ArtworkId),
+                    Rental: rental
+                ))
+                .Where(tuple => tuple.Artwork != null)
+                .ToList()!;
+        }
+
+        // === ОПЕРАЦИИ ===
+
+        // Добавление нового произведения искусства
+        public Artwork AddArtwork(string title, string artistId, int year, string genre, 
+            string description, decimal estimatedValue)
+        {
+            var artist = _artistRepo.GetById(artistId);
+            if (artist == null)
+            {
+                throw new Exception("Художник не найден");
+            }
+
+            var artwork = new Artwork
+            {
+                Title = title,
+                ArtistId = artistId,
+                Year = year,
+                Genre = genre,
+                Description = description,
+                EstimatedValue = estimatedValue,
+                Status = ArtworkStatus.InGallery
+            };
+
+            _artworkRepo.Add(artwork);
+            _artworkRepo.SaveChanges();
+
+            // Обновляем список работ художника
+            artist.ArtworkIds.Add(artwork.Id);
+            _artistRepo.Update(artist);
+            _artistRepo.SaveChanges();
+
+            return artwork;
+        }
+
+        // Продажа произведения искусства
+        public Sale SellArtwork(string artworkId, string buyerId, decimal amount)
+        {
+            var artwork = _artworkRepo.GetById(artworkId);
+            if (artwork == null)
+            {
+                throw new Exception("Произведение не найдено");
+            }
+
+            if (artwork.Status != ArtworkStatus.InGallery)
+            {
+                throw new Exception("Это произведение недоступно для продажи");
+            }
+
+            var buyer = _visitorRepo.GetById(buyerId);
+            if (buyer == null)
+            {
+                throw new Exception("Покупатель не найден");
+            }
+
+            // Создаем запись о продаже
+            var sale = new Sale
+            {
+                ArtworkId = artworkId,
+                BuyerId = buyerId,
+                Date = DateTime.Now,
+                Amount = amount
+            };
+
+            // Обновляем статус произведения
+            artwork.Status = ArtworkStatus.Sold;
+            _artworkRepo.Update(artwork);
+            _artworkRepo.SaveChanges();
+
+            // Добавляем продажу в историю покупок посетителя
+            buyer.PurchaseIds.Add(sale.Id);
+            _visitorRepo.Update(buyer);
+            _visitorRepo.SaveChanges();
+
+            // Сохраняем информацию о продаже
+            _saleRepo.Add(sale);
+            _saleRepo.SaveChanges();
+
+            return sale;
+        }
+
+        // Передача произведения в аренду
+        public Rental RentArtwork(string artworkId, string renterId, DateTime startDate, 
+            DateTime endDate, decimal cost)
+        {
+            var artwork = _artworkRepo.GetById(artworkId);
+            if (artwork == null)
+            {
+                throw new Exception("Произведение не найдено");
+            }
+
+            if (artwork.Status != ArtworkStatus.InGallery)
+            {
+                throw new Exception("Это произведение недоступно для аренды");
+            }
+
+            var renter = _visitorRepo.GetById(renterId);
+            if (renter == null)
+            {
+                throw new Exception("Арендатор не найден");
+            }
+
+            // Создаем запись об аренде
+            var rental = new Rental
+            {
+                ArtworkId = artworkId,
+                RenterId = renterId,
+                StartDate = startDate,
+                EndDate = endDate,
+                Cost = cost
+            };
+
+            // Обновляем статус произведения
+            artwork.Status = ArtworkStatus.Rented;
+            _artworkRepo.Update(artwork);
+            _artworkRepo.SaveChanges();
+
+            // Сохраняем информацию об аренде
+            _rentalRepo.Add(rental);
+            _rentalRepo.SaveChanges();
+
+            return rental;
+        }
+        
+        // Бронирование билетов на выставку
+        public Ticket BookTicket(string exhibitionId, string visitorId, DateTime visitDate)
+        {
+            var exhibition = _exhibitionRepo.GetById(exhibitionId);
+            if (exhibition == null)
+            {
+                throw new Exception("Выставка не найдена");
+            }
+
+            if (visitDate < exhibition.StartDate || visitDate > exhibition.EndDate)
+            {
+                throw new Exception("Дата посещения должна быть в период проведения выставки");
+            }
+
+            var visitor = _visitorRepo.GetById(visitorId);
+            if (visitor == null)
+            {
+                throw new Exception("Посетитель не найден");
+            }
+
+            // Создаем билет
+            var ticket = new Ticket
+            {
+                ExhibitionId = exhibitionId,
+                VisitorId = visitorId,
+                VisitDate = visitDate,
+                Price = exhibition.TicketPrice,
+                Status = TicketStatus.Reserved
+            };
+
+            // Добавляем запись о посещении
+            visitor.VisitHistory.Add($"{exhibition.Title} ({visitDate.ToShortDateString()})");
+            _visitorRepo.Update(visitor);
+            _visitorRepo.SaveChanges();
+
+            // Сохраняем билет
+            _ticketRepo.Add(ticket);
+            _ticketRepo.SaveChanges();
+
+            return ticket;
+        }
+        
+        
+        
+        
+
+        // Добавление нового художника
+        public Artist AddArtist(string fullName, string country, string lifeYears, string style)
+        {
+            var artist = new Artist
+            {
+                FullName = fullName,
+                Country = country,
+                LifeYears = lifeYears,
+                Style = style
+            };
+        
+            _artistRepo.Add(artist);
+            _artistRepo.SaveChanges();
+        
+            return artist;
+        }
+        
+        // Добавление новой выставки
+        public Exhibition AddExhibition(string title, DateTime startDate, DateTime endDate, 
+            string location, List<string> artworkIds, decimal ticketPrice)
+        {
+            // Проверяем существование произведений
+            foreach (var artworkId in artworkIds)
+            {
+                if (_artworkRepo.GetById(artworkId) == null)
+                {
+                    throw new Exception($"Произведение с ID {artworkId} не найдено");
+                }
+            }
+
+            var exhibition = new Exhibition
+            {
+                Title = title,
+                StartDate = startDate,
+                EndDate = endDate,
+                Location = location,
+                ArtworkIds = artworkIds,
+                TicketPrice = ticketPrice
+            };
+
+            _exhibitionRepo.Add(exhibition);
+            _exhibitionRepo.SaveChanges();
+
+            return exhibition;
+        }
+        
+        // Регистрация нового посетителя
+        public Visitor AddVisitor(string fullName, string contactInfo)
+        {
+            var visitor = new Visitor
+            {
+                FullName = fullName,
+                ContactInfo = contactInfo
+            };
+
+            _visitorRepo.Add(visitor);
+            _visitorRepo.SaveChanges();
+
+            return visitor;
+        }
+    }
+}
