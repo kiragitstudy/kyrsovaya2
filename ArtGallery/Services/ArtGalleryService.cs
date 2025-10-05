@@ -260,6 +260,8 @@ namespace ArtGallery.Services
         public Rental RentArtwork(string artworkId, string renterId, DateTime startDate, 
             DateTime endDate, decimal cost)
         {
+            if (startDate >= endDate)
+                throw new Exception("Дата окончания аренды должна быть позже даты начала.");
             var artwork = _artworkRepo.GetById(artworkId);
             if (artwork == null)
             {

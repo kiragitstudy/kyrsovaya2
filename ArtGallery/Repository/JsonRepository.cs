@@ -2,18 +2,18 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Text.Unicode;
+using ArtGallery.Models;
 
 namespace ArtGallery.Repository
 {
-    public class JsonRepository<T> : IRepository<T> where T : ArtGallery.Models.BaseEntity
+    public class JsonRepository<T> : IRepository<T> where T : BaseEntity
     {
         private readonly string _filePath;
-        private List<T> _entities;
+        private readonly List<T> _entities;
 
         public JsonRepository(string fileName)
         {
-            string directory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data");
+            var directory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data");
             
             if (!Directory.Exists(directory))
             {

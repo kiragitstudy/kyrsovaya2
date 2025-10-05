@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArtGalleryDLC", "ArtGallery
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArtGallery", "ArtGallery\ArtGallery.csproj", "{8992951D-6C29-4D18-9414-37AE1F4999CC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArtGallery.Test", "ArtGallery.Test\ArtGallery.Test.csproj", "{ACA1E084-7404-4B4D-98A5-25552A944543}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{8992951D-6C29-4D18-9414-37AE1F4999CC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8992951D-6C29-4D18-9414-37AE1F4999CC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8992951D-6C29-4D18-9414-37AE1F4999CC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ACA1E084-7404-4B4D-98A5-25552A944543}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ACA1E084-7404-4B4D-98A5-25552A944543}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ACA1E084-7404-4B4D-98A5-25552A944543}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ACA1E084-7404-4B4D-98A5-25552A944543}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

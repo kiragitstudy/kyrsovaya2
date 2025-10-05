@@ -13,6 +13,6 @@ namespace ArtGallery.Models
         public ArtworkStatus Status { get; set; }
 
         [JsonIgnore]
-        public Artist Artist { get; set; }
+        public Artist? Artist { get; set; }
     }
 }

@@ -7,14 +7,14 @@
 
 namespace ArtGallery
 {
-    using ArtGallery.Models;
-    using ArtGallery.Services;
+    using Models;
+    using Services;
     using System;
     using System.Collections.Generic;
     using System.Globalization;
     using System.Linq;
 
-    public class Program
+    public abstract class Program
     {
         private static ArtGalleryService _service;
 
