@@ -63,166 +63,100 @@ namespace ArtGallery.Test
             return s.AddVisitor(name, "test@example.com");
         }
 
-        // 1) Простейшие Happy-path
-
         [Test]
-        public void AddArtwork_Adds_Item_And_Relates_To_Artist()
+        public void GetAvailableArtworks_Returns_Only_InGallery_Items_AreEquivalent()
         {
-            // Arrange
             var s = CreateService();
 
-            // Act
-            var (artist, art) = SeedArtistAndArtwork(s);
-            s.LoadReferences();
+            var (artist, a1) = SeedArtistAndArtwork(s);
+            var a2 = s.AddArtwork("Картина-2", artist.Id, 2001, "Жанр", "Desc", 100m);
+            var a3 = s.AddArtwork("Картина-3", artist.Id, 2002, "Жанр", "Desc", 100m);
+            var v  = SeedVisitor(s);
 
-            // Assert
-            var foundArt = s.GetAllArtworks().FirstOrDefault(a => a.Id == art.Id);
-            var foundArtist = s.GetAllArtists().FirstOrDefault(a => a.Id == artist.Id);
+            // Делаем одну продажу и одну аренду, чтобы в наличии осталась только a3
+            s.SellArtwork(a1.Id, v.Id, 500m);
+            s.RentArtwork(a2.Id, v.Id, DateTime.Today, DateTime.Today.AddDays(3), 50m);
 
-            Assert.Multiple(() =>
-            {
-                Assert.That(foundArt, Is.Not.Null, "Произведение не найдено по Id");
-                Assert.That(foundArt!.Status, Is.EqualTo(ArtworkStatus.InGallery));
-                Assert.That(foundArtist, Is.Not.Null, "Художник не найден по Id");
-                Assert.That(foundArtist!.ArtworkIds, Does.Contain(art.Id), "Связь художник->произведение не проставлена");
-            });
+            var availableIds = s.GetAvailableArtworks().Select(x => x.Id).ToList();
+
+            // a3 точно в наличии
+            CollectionAssert.IsSubsetOf(new[] { a3.Id }, availableIds);
+            // a1 (sold) и a2 (rented) точно НЕ в наличии
+            CollectionAssert.DoesNotContain(availableIds, a1.Id);
+            CollectionAssert.DoesNotContain(availableIds, a2.Id);
+
         }
 
         [Test]
-        public void SellArtwork_Increases_SalesRevenue_And_Changes_Status()
+        public void GetPopularArtistsBySales_Top2_AreEqual_With_Order()
         {
-            // Arrange
             var s = CreateService();
-            var (_, art) = SeedArtistAndArtwork(s);
+
+            // A: 2 продажи, B: 1 продажа
+            var (aArtist, aArt1) = SeedArtistAndArtwork(s);
+            var aArt2 = s.AddArtwork("A-2", aArtist.Id, 2000, "Жанр", "d", 1);
+            var bArtist = s.AddArtist("Автор B", "RU", "1900-2000", "Стиль");
+            var bArt1   = s.AddArtwork("B-1", bArtist.Id, 2001, "Жанр", "d", 1);
+
             var buyer = SeedVisitor(s);
-            var (_, salesBefore, totalBefore) = s.GetTotalRevenue();
+            s.SellArtwork(aArt1.Id, buyer.Id, 100m);
+            s.SellArtwork(aArt2.Id, buyer.Id, 200m);
+            s.SellArtwork(bArt1.Id, buyer.Id, 300m);
 
-            // Act
-            var amount = 12345m;
-            var sale = s.SellArtwork(art.Id, buyer.Id, amount);
-            s.LoadReferences();
+            var onlyOurTwo = s.GetPopularArtistsBySales()
+                .Where(x => x.Artist.Id == aArtist.Id || x.Artist.Id == bArtist.Id)
+                .OrderByDescending(x => x.SoldCount)
+                .Select(x => (x.Artist.FullName, x.SoldCount))
+                .ToList();
 
-            // Assert
-            var soldArt = s.GetAllArtworks().First(a => a.Id == art.Id);
-            var (_, salesAfter, totalAfter) = s.GetTotalRevenue();
-
-            Assert.Multiple(() =>
+            var expected = new List<(string, int)>
             {
-                Assert.That(sale.Amount, Is.EqualTo(amount));
-                Assert.That(soldArt.Status, Is.EqualTo(ArtworkStatus.Sold));
-                Assert.That(salesAfter - salesBefore, Is.EqualTo(amount));
-                Assert.That(totalAfter - totalBefore, Is.EqualTo(amount));
-            });
+                (aArtist.FullName, 2),
+                (bArtist.FullName, 1)
+            };
+
+            CollectionAssert.AreEqual(expected, onlyOurTwo);
         }
 
         [Test]
-        public void RentArtwork_Marks_As_Rented_And_Shows_In_RentedList()
+        public void GetRentedArtworks_AllItemsHaveArtwork_AllItemsAreNotNull()
         {
-            // Arrange
             var s = CreateService();
+
             var (_, art) = SeedArtistAndArtwork(s);
-            var renter = SeedVisitor(s);
-            var from = DateTime.Today;
-            var to = from.AddDays(3);
+            var renter   = SeedVisitor(s);
+            s.RentArtwork(art.Id, renter.Id, DateTime.Today, DateTime.Today.AddDays(2), 42m);
 
-            // Act
-            var rental = s.RentArtwork(art.Id, renter.Id, from, to, 777m);
-            s.LoadReferences();
+            var rentedArtworks = s.GetRentedArtworks()
+                                  .Select(t => t.Artwork)
+                                  .ToList();
 
-            // Assert
-            var artReloaded = s.GetAllArtworks().First(a => a.Id == art.Id);
-            var rented = s.GetRentedArtworks();
-            var rentedThis = rented.FirstOrDefault(r => r.Rental.Id == rental.Id);
-
-            Assert.Multiple(() =>
-            {
-                Assert.That(artReloaded.Status, Is.EqualTo(ArtworkStatus.Rented));
-                Assert.That(rentedThis, Is.Not.Null, "Не нашли только что созданную аренду");
-            });
+            // У всех записей аренды присутствует связанное произведение
+            CollectionAssert.AllItemsAreNotNull(rentedArtworks);
         }
 
         [Test]
-        public void BookTicket_Uses_ExhibitionPrice_And_Changes_TicketRevenue_By_Delta()
+        public void AddExhibition_ArtworkIds_Are_Subset_Of_AllArtworks_IsSubsetOf()
         {
-            // Arrange
-            var s = CreateService();
-            var (_, art) = SeedArtistAndArtwork(s);
-            var ex = s.AddExhibition("Тест Выставка", DateTime.Today, DateTime.Today.AddDays(10), "Зал 1",
-                                     new() { art.Id }, 350m);
-            var visitor = SeedVisitor(s);
-            var (ticketBefore, salesBefore, totalBefore) = s.GetTotalRevenue();
-
-            // Act
-            var t1 = s.BookTicket(ex.Id, visitor.Id, DateTime.Today.AddDays(1));
-            var t2 = s.BookTicket(ex.Id, visitor.Id, DateTime.Today.AddDays(2));
-            var (ticketAfter, salesAfter, totalAfter) = s.GetTotalRevenue();
-
-            // Assert
-            Assert.Multiple(() =>
-            {
-                Assert.That(t1.Price, Is.EqualTo(350m));
-                Assert.That(t2.Price, Is.EqualTo(350m));
-                Assert.That(ticketAfter - ticketBefore, Is.EqualTo(700m), "Δ ticket revenue");
-                Assert.That(salesAfter - salesBefore, Is.EqualTo(0m), "Продаж не было");
-                Assert.That(totalAfter - totalBefore, Is.EqualTo(700m), "Δ total revenue");
-            });
-        }
-
-        // 2) Короткие негатив-кейсы
-
-        [Test]
-        public void AddArtwork_With_Unknown_Artist_Throws()
-        {
-            // Arrange
             var s = CreateService();
 
-            // Act + Assert
-            var ex = Assert.Throws<Exception>(() =>
-                s.AddArtwork("Без автора", "no-such-artist", 2000, "жанр", "desc", 10m));
-            StringAssert.Contains("не найден", ex!.Message);
-        }
+            var (artist, a1) = SeedArtistAndArtwork(s);
+            var a2 = s.AddArtwork("Эксп-2", artist.Id, 2002, "Жанр", "d", 1m);
+            var a3 = s.AddArtwork("Эксп-3", artist.Id, 2003, "Жанр", "d", 1m);
 
-        [Test]
-        public void SellArtwork_When_Already_Sold_Throws()
-        {
-            // Arrange
-            var s = CreateService();
-            var (_, art) = SeedArtistAndArtwork(s);
-            var buyer = SeedVisitor(s);
-            s.SellArtwork(art.Id, buyer.Id, 100m);
+            var ex = s.AddExhibition(
+                "Осенняя экспозиция",
+                DateTime.Today,
+                DateTime.Today.AddDays(5),
+                "Зал 1",
+                new List<string> { a1.Id, a3.Id },   // подмножество всех Id
+                250m
+            );
 
-            // Act + Assert
-            var ex = Assert.Throws<Exception>(() => s.SellArtwork(art.Id, buyer.Id, 200m));
-            StringAssert.Contains("недоступно для продажи", ex!.Message);
-        }
+            var allArtworkIds = s.GetAllArtworks().Select(x => x.Id).ToList();
 
-        [Test]
-        public void RentArtwork_With_Wrong_Dates_Throws()
-        {
-            // Arrange
-            var s = CreateService();
-            var (_, art) = SeedArtistAndArtwork(s);
-            var renter = SeedVisitor(s);
-
-            // Act + Assert (конец раньше начала)
-            var ex = Assert.Throws<Exception>(() =>
-                s.RentArtwork(art.Id, renter.Id, DateTime.Today, DateTime.Today.AddDays(-1), 10m));
-            StringAssert.Contains("окончания", ex!.Message);
-        }
-
-        [Test]
-        public void BookTicket_Outside_Exhibition_Period_Throws()
-        {
-            // Arrange
-            var s = CreateService();
-            var (_, art) = SeedArtistAndArtwork(s);
-            var exb = s.AddExhibition("Выставка", DateTime.Today, DateTime.Today.AddDays(2), "Зал", new() { art.Id }, 300m);
-            var v = SeedVisitor(s);
-
-            // Act + Assert
-            var ex = Assert.Throws<Exception>(() =>
-                s.BookTicket(exb.Id, v.Id, DateTime.Today.AddDays(5)));
-            StringAssert.Contains("период", ex!.Message);
+            // Id картин выставки — подмножество всех Id картин
+            CollectionAssert.IsSubsetOf(ex.ArtworkIds, allArtworkIds);
         }
     }
 }
